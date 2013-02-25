@@ -17,7 +17,7 @@ The plugin will not work with older versions of Piwik.
 
 ## Installation
 
-[Download](https://github.com/JulienMoumne/Piwik-ReportPublisher/tags) the plugin archive and extract all files in directory `[PATH TO PIWIK]/plugins/ReportPublisher`.
+[Download](https://github.com/JulienMoumne/piwik-report-publisher/tags) the plugin archive and extract all files in directory `[PATH TO PIWIK]/plugins/ReportPublisher`.
 
 ## Authors
 
