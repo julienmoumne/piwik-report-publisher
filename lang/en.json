@@ -1,0 +1,6 @@
+{
+    "ReportPublisher": {
+        "FtpReportFtpUri": "Ftp URI",
+        "FtpReportFtpUriHelp": "ftp://[<user>[:<password>]@]<host>[:<port>]/<url-path>"
+    }
+}

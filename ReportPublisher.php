@@ -4,302 +4,219 @@
  * 
  * @link http://piwik.org
  * @license http://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
- * @version $Id$
- * 
+ *
  * @category Piwik_Plugins
- * @package Piwik_ReportPublisher
+ * @package ReportPublisher
  */
+namespace Piwik\Plugins\ReportPublisher;
+
+use Exception;
+use Piwik\Piwik;
+use Piwik\Plugins\ScheduledReports\API;
+use Piwik\ReportRenderer;
+use Piwik\View;
 
 /**
  *
- * @package Piwik_ReportPublisher
+ * @package ReportPublisher
  */
-class Piwik_ReportPublisher extends Piwik_Plugin
+class ReportPublisher extends \Piwik\Plugin
 {
-	const FTP_TYPE = 'ftp';
-	const FTP_URI_PARAMETER = 'ftpUri';
+    const FTP_TYPE = 'ftp';
+    const FTP_URI_PARAMETER = 'ftpUri';
 
-	static private $managedReportTypes = array(
-		self::FTP_TYPE => 'plugins/ReportPublisher/images/ftp.png'
-	);
+    static private $managedReportTypes = array(
+        self::FTP_TYPE => 'plugins/ReportPublisher/images/ftp.png'
+    );
 
-	static private $managedReportFormats = array(
-		Piwik_ReportRenderer::PDF_FORMAT => 'plugins/UserSettings/images/plugins/pdf.gif'
-	);
+    static private $managedReportFormats = array(
+        ReportRenderer::PDF_FORMAT => 'plugins/UserSettings/images/plugins/pdf.gif'
+    );
 
-	static private $availableParameters = array(
-		self::FTP_URI_PARAMETER => true,
-	);
-	/**
-	 * Return information about this plugin.
-	 *
-	 * @see Piwik_Plugin
-	 *
-	 * @return array
-	 */
-	public function getInformation()
-	{
-		return array(
-			'name' => 'Report Publisher Plugin',
-			'description' => Piwik_Translate('ReportPublisher_PluginDescription'),
-			'homepage' => 'http://piwik.org/',
-			'author' => 'Piwik',
-			'author_homepage' => 'http://piwik.org/',
-			'license' => 'GPL v3 or later',
-			'license_homepage' => 'http://www.gnu.org/licenses/gpl.html',
-			'version' => '0.1',
-			'translationAvailable' => true,
-		);
-	}
-
-	function getListHooksRegistered()
-	{
-		return array(
-			'PDFReports.getReportTypes' => 'getReportTypes',
-			'PDFReports.getReportFormats' => 'getReportFormats',
-			'PDFReports.validateReportParameters' => 'validateReportParameters',
-			'PDFReports.getReportParameters' => 'getReportParameters',
-			'PDFReports.getReportMetadata' => 'getReportMetadata',
-			'template_reportParametersPDFReports' => 'template_reportParametersPDFReports',
-			'PDFReports.getReportRecipients' => 'getReportRecipients',
-			'PDFReports.allowMultipleReports' => 'allowMultipleReports',
-			'PDFReports.getRendererInstance' => 'getRendererInstance',
-			'PDFReports.processReports' => 'processReports',
-			'PDFReports.sendReport' => 'sendReport',
-		);
-	}
-
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function getReportTypes( $notification )
-	{
-		$reportTypes = &$notification->getNotificationObject();
-		$reportTypes = array_merge($reportTypes, self::$managedReportTypes);
-	}
-
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function getReportFormats( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$reportFormats = &$notification->getNotificationObject();
-			$reportFormats = self::$managedReportFormats;
-		}
-	}
-
-	private static function manageEvent($notification)
-	{
-		$notificationInfo = $notification->getNotificationInfo();
-		return in_array(
-			$notificationInfo[Piwik_PDFReports_API::REPORT_TYPE_INFO_KEY],
-			array_keys(self::$managedReportTypes)
-		);
-	}
-
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function validateReportParameters( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$parameters = &$notification->getNotificationObject();
-
-			// TODO validate FTP URI
-		}
-	}
-
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function getReportParameters( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$availableParameters = &$notification->getNotificationObject();
-			$availableParameters = self::$availableParameters;
-		}
-	}
-
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function getReportMetadata( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$reportMetadata = &$notification->getNotificationObject();
-
-			$notificationInfo = $notification->getNotificationInfo();
-			$idSite = $notificationInfo[Piwik_PDFReports_API::ID_SITE_INFO_KEY];
-
-			$availableReportMetadata = Piwik_API_API::getInstance()->getReportMetadata($idSite);
-
-			$filteredReportMetadata = array();
-			foreach($availableReportMetadata as $reportMetadata)
-			{
-				// removing reports from the API category and MultiSites.getOne
-				if(
-					$reportMetadata['category'] == 'API' ||
-					$reportMetadata['category'] == Piwik_Translate('General_MultiSitesSummary') && $reportMetadata['name'] == Piwik_Translate('General_SingleWebsitesDashboard')
-				) continue;
-
-				$filteredReportMetadata[] = $reportMetadata;
-			}
-
-			$reportMetadata = $filteredReportMetadata;
-		}
-	}
-
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	static public function template_reportParametersPDFReports($notification)
-	{
-		$out =& $notification->getNotificationObject();
-
-		$view = Piwik_View::factory('ReportParameters');
-		$view->reportType = self::FTP_TYPE;
-		$out .= $view->render();
-	}
-
-	function getReportRecipients( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$recipients = &$notification->getNotificationObject();
-			$notificationInfo = $notification->getNotificationInfo();
-
-			$report = $notificationInfo[Piwik_PDFReports_API::REPORT_KEY];
-			$recipients = $report['parameters'][self::FTP_URI_PARAMETER];
-		}
-	}
+    static private $availableParameters = array(
+        self::FTP_URI_PARAMETER => true,
+    );
 
 
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function allowMultipleReports( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$allowMultipleReports = &$notification->getNotificationObject();
-			$allowMultipleReports = true;
-		}
-	}
+    /**
+     * @see Piwik_Plugin::getListHooksRegistered
+     */
+    function getListHooksRegistered()
+    {
+        return array(
+            'ScheduledReports.getReportParameters' => 'getReportParameters',
+            'ScheduledReports.validateReportParameters' => 'validateReportParameters',
+            'ScheduledReports.getReportMetadata' => 'getReportMetadata',
+            'ScheduledReports.getReportTypes' => 'getReportTypes',
+            'ScheduledReports.getReportFormats' => 'getReportFormats',
+            'ScheduledReports.getRendererInstance' => 'getRendererInstance',
+            'ScheduledReports.getReportRecipients' => 'getReportRecipients',
+            'ScheduledReports.processReports' => 'processReports',
+            'ScheduledReports.allowMultipleReports' => 'allowMultipleReports',
+            'ScheduledReports.sendReport' => 'sendReport',
+            'Template.reportParametersScheduledReports' => 'template_reportParametersScheduledReports',
+        );
+    }
 
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function getRendererInstance( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$reportRenderer = &$notification->getNotificationObject();
-			$notificationInfo = $notification->getNotificationInfo();
+    public function getReportTypes(&$reportTypes)
+    {
+        $reportTypes = array_merge($reportTypes, self::$managedReportTypes);
+    }
 
-			$reportFormat = $notificationInfo[Piwik_PDFReports_API::REPORT_KEY]['format'];
+    public function getReportFormats(&$reportFormats, $reportType)
+    {
+        if (self::manageEvent($reportType)) {
+            $reportFormats = self::$managedReportFormats;
+        }
+    }
 
-			$reportRenderer = Piwik_ReportRenderer::factory($reportFormat);
-		}
-	}
+    private static function manageEvent($reportType)
+    {
+        return in_array($reportType, array_keys(self::$managedReportTypes));
+    }
 
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function processReports( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$processedReports = &$notification->getNotificationObject();
+    public function validateReportParameters(&$parameters, $reportType)
+    {
+        if(self::manageEvent($reportType))
+        {
+            // TODO validate FTP URI
+        }
+    }
 
-			$notificationInfo = $notification->getNotificationInfo();
-			$report = $notificationInfo[Piwik_PDFReports_API::REPORT_KEY];
+    public function getReportParameters(&$availableParameters, $reportType)
+    {
+        if (self::manageEvent($reportType)) {
+            $availableParameters = self::$availableParameters;
+        }
+    }
 
-			foreach ($processedReports as &$processedReport)
-			{
-				$metadata = $processedReport['metadata'];
+    public function getReportMetadata(&$reportMetadata, $reportType, $idSite)
+    {
+        if (self::manageEvent($reportType)) {
+            $availableReportMetadata = \Piwik\Plugins\API\API::getInstance()->getReportMetadata($idSite);
 
-				$processedReport['displayTable'] = true;
+            $filteredReportMetadata = array();
+            foreach ($availableReportMetadata as $reportMetadata) {
+                // removing reports from the API category and MultiSites.getOne
+                if (
+                    $reportMetadata['category'] == 'API' ||
+                    $reportMetadata['category'] == Piwik::translate('General_MultiSitesSummary') && $reportMetadata['name'] == Piwik::translate('General_SingleWebsitesDashboard')
+                ) continue;
 
-				$processedReport['displayGraph'] =
-						Piwik::isGdExtensionEnabled()
-						&& Piwik_PluginsManager::getInstance()->isPluginActivated('ImageGraph')
-						&& !empty($metadata['imageGraphUrl']);
+                $filteredReportMetadata[] = $reportMetadata;
+            }
 
-				// remove evolution metrics from MultiSites.getAll
-				if($metadata['module'] == 'MultiSites')
-				{
-					$columns = $processedReport['columns'];
+            $reportMetadata = $filteredReportMetadata;
+        }
+    }
 
-					foreach(Piwik_MultiSites_API::getApiMetrics($enhanced = true) as $metricSettings)
-					{
-						unset($columns[$metricSettings[Piwik_MultiSites_API::METRIC_EVOLUTION_COL_NAME_KEY]]);
-					}
+    static public function template_reportParametersScheduledReports(&$out)
+    {
+        $view = new View('@ReportPublisher/reportParametersReportPublisher');
+        $view->reportType = self::FTP_TYPE;
+        $out .= $view->render();
+    }
 
-					$processedReport['metadata'] = $metadata;
-					$processedReport['columns'] = $columns;
-				}
-			}
-		}
-	}
+    public function getReportRecipients(&$recipients, $reportType, $report)
+    {
+        if (self::manageEvent($reportType)) {
+            $recipients = $report['parameters'][self::FTP_URI_PARAMETER];
+        }
+    }
 
 
-	/**
-	 * @param Piwik_Event_Notification $notification notification object
-	 */
-	function sendReport( $notification )
-	{
-		if(self::manageEvent($notification))
-		{
-			$notificationInfo = $notification->getNotificationInfo();
-			$report = $notificationInfo[Piwik_PDFReports_API::REPORT_KEY];
-			$websiteName = $notificationInfo[Piwik_PDFReports_API::WEBSITE_NAME_KEY];
-			$prettyDate = $notificationInfo[Piwik_PDFReports_API::PRETTY_DATE_KEY];
-			$contents = $notificationInfo[Piwik_PDFReports_API::REPORT_CONTENT_KEY];
-			$filename = $notificationInfo[Piwik_PDFReports_API::FILENAME_KEY];
-			$additionalFiles = $notificationInfo[Piwik_PDFReports_API::ADDITIONAL_FILES_KEY];
+    public function allowMultipleReports(&$allowMultipleReports, $reportType)
+    {
+        if (self::manageEvent($reportType)) {
+            $allowMultipleReports = true;
+        }
+    }
 
-			$reportParameters = $report['parameters'];
-			$ftpUri = $reportParameters[self::FTP_URI_PARAMETER];
+    public function getRendererInstance(&$reportRenderer, $reportType, $outputType, $report)
+    {
+        if (self::manageEvent($reportType)) {
+            $reportFormat = $report['format'];
 
-			preg_match("/ftp:\/\/(.*?):(.*?)@(.*?)(\/.*)/i", $ftpUri, $match);
+            $reportRenderer = ReportRenderer::factory($reportFormat);
 
-			$username = $match[1];
-			$password = $match[2];
-			$host = $match[3];
-			$path = $match[4];
+            if ($reportFormat == ReportRenderer::HTML_FORMAT) {
+                $reportRenderer->setRenderImageInline($outputType != API::OUTPUT_SAVE_ON_DISK);
+            }
+        }
+    }
 
-			$connection = ftp_connect($host);
+    public function processReports(&$processedReports, $reportType, $outputType, $report)
+    {
+        if (self::manageEvent($reportType)) {
 
-			if (!$connection)
-			{
-				throw new Exception('Connection to FTP ' . $host . ' failed');
-			}
+            foreach ($processedReports as &$processedReport) {
+                $metadata = $processedReport['metadata'];
 
-			$login = ftp_login($connection, $username, $password);
+                $processedReport['displayTable'] = true;
 
-			if (!$login)
-			{
-				throw new Exception('Login to FTP ' . $host . ' failed');
-			}
+                $processedReport['displayGraph'] =
+                    \Piwik\SettingsServer::isGdExtensionEnabled()
+                    && \Piwik\Plugin\Manager::getInstance()->isPluginActivated('ImageGraph')
+                    && !empty($metadata['imageGraphUrl']);
 
-			$chpath = ftp_chdir($connection, $path);
+                $processedReport['evolutionGraph'] = true;
 
-			if (!$chpath)
-			{
-				throw new Exception('Changing to directory ' . $host . ' $path');
-			}
+                // remove evolution metrics from MultiSites.getAll
+                if ($metadata['module'] == 'MultiSites') {
+                    $columns = $processedReport['columns'];
 
-			$upload = ftp_put($connection, $filename, PIWIK_USER_PATH . '/tmp/assets/' . $filename, FTP_BINARY);
+                    foreach (\Piwik\Plugins\MultiSites\API::getApiMetrics($enhanced = true) as $metricSettings) {
+                        unset($columns[$metricSettings[\Piwik\Plugins\MultiSites\API::METRIC_EVOLUTION_COL_NAME_KEY]]);
+                    }
 
-			if (!$upload)
-			{
-				throw new Exception('Failed to send ' . $filename . ' to ' . $host);
-			}
-		}
-	}
+                    $processedReport['metadata'] = $metadata;
+                    $processedReport['columns'] = $columns;
+                }
+            }
+        }
+    }
+
+    public function sendReport($reportType, $report, $contents, $filename, $prettyDate, $reportSubject, $reportTitle, $additionalFiles)
+    {
+        if(self::manageEvent($reportType))
+        {
+            $reportParameters = $report['parameters'];
+            $ftpUri = $reportParameters[self::FTP_URI_PARAMETER];
+
+            preg_match("/ftp:\/\/(.*?):(.*?)@(.*?)(\/.*)/i", $ftpUri, $match);
+
+            $username = $match[1];
+            $password = $match[2];
+            $host = $match[3];
+            $path = $match[4];
+
+            $connection = ftp_connect($host);
+
+            if (!$connection)
+            {
+                throw new Exception('Connection to FTP ' . $host . ' failed');
+            }
+
+            $login = ftp_login($connection, $username, $password);
+
+            if (!$login)
+            {
+                throw new Exception('Login to FTP ' . $host . ' failed');
+            }
+
+            $chpath = ftp_chdir($connection, $path);
+
+            if (!$chpath)
+            {
+                throw new Exception('Changing to directory ' . $host . ' $path');
+            }
+
+            $upload = ftp_put($connection, $filename, PIWIK_USER_PATH . '/tmp/assets/' . $filename, FTP_BINARY);
+
+            if (!$upload)
+            {
+                throw new Exception('Failed to send ' . $filename . ' to ' . $host);
+            }
+        }
+    }
 }

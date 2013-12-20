@@ -1,0 +1,40 @@
+<script>
+    $(function() {
+        resetReportParametersFunctions ['{{ reportType }}'] =
+                function () {
+
+                    var reportParameters = {
+                        'ftpUri' : []
+                    };
+
+                    updateReportParametersFunctions['{{ reportType }}'](reportParameters);
+                };
+
+        updateReportParametersFunctions['{{ reportType }}'] =
+                function (reportParameters) {
+
+                    if(reportParameters == null) return;
+
+                    $('#ftpUri').val(reportParameters.ftpUri);
+                };
+
+        getReportParametersFunctions['{{ reportType }}'] =
+                function () {
+
+                    var parameters = Object();
+
+                    parameters.ftpUri = $('#ftpUri').val();
+
+                    return parameters;
+                };
+    });
+</script>
+
+<tr class='{{ reportType }}'>
+    <td class="first">
+        {{ 'ReportPublisher_FtpReportFtpUri'|translate }}
+    </td>
+    <td>
+        <input id='ftpUri' size='75' title='{{ 'ReportPublisher_FtpReportFtpUriHelp'|translate }}'/>
+    </td>
+</tr>

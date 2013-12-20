@@ -1,0 +1,20 @@
+{
+    "name": "ReportPublisher",
+    "description": "Publish Piwik reports to external systems using various protocols. Please consult the changelog for available protocols.",
+    "version": "0.2.0",
+    "keywords": ["Report", "Publish", "FTP"],
+    "license": "GPL-3.0+",
+    "homepage": "https://github.com/JulienMoumne/piwik-report-publisher",
+    "authors": [
+        {
+            "name": "Julien Moumné",
+            "email": "julien@piwik.org",
+            "homepage": "http://moumne.com"
+        }
+    ],
+    "donate": {
+        "paypal": "julien@piwik.org",
+        "bitcoin": "1CEbySZaeNMBdEbYL3nYrvrB8DJ1n2NGix"
+    },
+    "theme": false
+}
