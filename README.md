@@ -21,7 +21,7 @@ Released under the GPL v3 (or later) license, see [misc/gpl-3.0.txt](misc/gpl-3.
 
 ## Changelog
 
-### 0.2.1 (Mar 16, 2014)
+### 0.2.1 & 0.2.2 (Mar 16, 2014)
 
 Improved Piwik Marketplace Integration
 
